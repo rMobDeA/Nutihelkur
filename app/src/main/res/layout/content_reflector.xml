@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    app:layout_behavior="@string/appbar_scrolling_view_behavior"
+    tools:context="com.example.rmacintosh.nutihelkur.ReflectorActivity"
+    tools:showIn="@layout/activity_reflector"
+    android:background="@color/flat4">
+
+
+    <TextView
+        android:id="@+id/monitoringText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="BEACONS "
+        android:textColor="@color/white"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintHorizontal_bias="0.165"
+        app:layout_constraintVertical_bias="0.097" />
+
+    <TextView
+        android:id="@+id/textViewData"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Collected statistics"
+        android:textColor="@color/white"
+        android:textStyle="bold"
+        tools:layout_constraintTop_creator="1"
+        android:layout_marginTop="31dp"
+        app:layout_constraintTop_toBottomOf="@+id/monitoringText"
+        tools:layout_constraintLeft_creator="1"
+        app:layout_constraintLeft_toLeftOf="@+id/monitoringText" />
+
+    <TextView
+        android:id="@+id/textViewStepC"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Step Counter"
+        android:textColor="@color/white"
+        android:textStyle="bold"
+        tools:layout_constraintTop_creator="1"
+        tools:layout_constraintBottom_creator="1"
+        android:layout_marginStart="33dp"
+        app:layout_constraintBottom_toBottomOf="@+id/textViewActivated"
+        tools:layout_constraintLeft_creator="1"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/textViewActivated" />
+
+    <TextView
+        android:id="@+id/textViewDataCount"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Data to send"
+        android:textColor="@color/white"
+        android:textStyle="bold"
+        tools:layout_constraintBottom_creator="1"
+        app:layout_constraintBottom_toTopOf="@+id/textViewStepC"
+        android:layout_marginStart="33dp"
+        tools:layout_constraintLeft_creator="1"
+        android:layout_marginBottom="29dp"
+        app:layout_constraintLeft_toLeftOf="parent" />
+
+    <TextView
+        android:id="@+id/textViewSteps"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintRight_toLeftOf="@+id/textViewStepC"
+        tools:layout_constraintTop_creator="1"
+        tools:layout_constraintRight_creator="1"
+        android:layout_marginTop="21dp"
+        app:layout_constraintTop_toBottomOf="@+id/textViewStepC"
+        tools:layout_constraintLeft_creator="1"
+        app:layout_constraintLeft_toLeftOf="@+id/textViewStepC" />
+
+    <TextView
+        android:id="@+id/textViewActivated"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="App Is Started "
+        android:textColor="@color/white"
+        android:textStyle="bold"
+        tools:layout_constraintRight_creator="1"
+        tools:layout_constraintBottom_creator="1"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_marginEnd="66dp"
+        app:layout_constraintRight_toRightOf="parent"
+        android:layout_marginBottom="186dp" />
+
+    <TextView
+        android:id="@+id/textViewActivatedC"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintRight_toLeftOf="@+id/textViewActivated"
+        tools:layout_constraintTop_creator="1"
+        tools:layout_constraintRight_creator="1"
+        android:layout_marginTop="21dp"
+        app:layout_constraintTop_toBottomOf="@+id/textViewActivated"
+        tools:layout_constraintLeft_creator="1"
+        app:layout_constraintLeft_toLeftOf="@+id/textViewActivated" />
+
+    <TextView
+        android:id="@+id/textViewStatsData"
+        android:layout_width="match_parent"
+        android:layout_height="120dp"
+        android:layout_marginBottom="121dp"
+        android:layout_marginTop="122dp"
+        android:scrollbars="vertical"
+        android:textColor="@color/white"
+        app:layout_constraintBottom_toBottomOf="@+id/textViewSteps"
+        app:layout_constraintLeft_toLeftOf="@+id/textViewData"
+        app:layout_constraintRight_toLeftOf="@+id/textViewData"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:layout_constraintBottom_creator="1"
+        tools:layout_constraintLeft_creator="1"
+        tools:layout_constraintRight_creator="1"
+        tools:layout_constraintTop_creator="1" />
+
+</android.support.constraint.ConstraintLayout>
