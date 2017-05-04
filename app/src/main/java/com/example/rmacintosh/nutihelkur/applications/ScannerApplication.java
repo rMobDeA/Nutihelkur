@@ -7,8 +7,10 @@ import android.util.Log;
 
 import com.example.rmacintosh.nutihelkur.BuildConfig;
 import com.example.rmacintosh.nutihelkur.ReflectorActivity;
+import com.example.rmacintosh.nutihelkur.dao.SensorDao;
 import com.example.rmacintosh.nutihelkur.helpers.NotificationHelper;
 import com.example.rmacintosh.nutihelkur.models.Sensor;
+import com.example.rmacintosh.nutihelkur.utils.RealmManager;
 
 import org.altbeacon.beacon.Beacon;
 import org.altbeacon.beacon.BeaconConsumer;
@@ -35,43 +37,32 @@ public class ScannerApplication extends Application implements BootstrapNotifier
     private BackgroundPowerSaver backgroundPowerSaver;
     private ReflectorActivity reflectorActivity = null;
     BeaconManager beaconManager;
-    Realm realm;
 
     public void onCreate() {
         super.onCreate();
-
         Realm.init(this);
         RealmConfiguration config = new RealmConfiguration.Builder().build();
         Realm.setDefaultConfiguration(config);
+        RealmManager.open();
 
-        realm = Realm.getDefaultInstance();
+        realmWorked();
 
-
-
-
-
-        //compile 'com.facebook.stetho:stetho:1.5.0'
-        //vb hakkab siit error
-        //beaconManager.getInstanceForApplication(this);
         beaconManager = BeaconManager.getInstanceForApplication(this);
-
-
-       // if (beaconManager.getInstanceForApplication(this) == null) {
-         //   Log.d(TAG, "ERRROR ONN GETINSTANCEFORAPPLICATIONSis");
-        //}
         // http://stackoverflow.com/questions/33594197/altbeacon-setbeaconlayout
-
-
         BeaconParser beaconParser = new BeaconParser().setBeaconLayout(BeaconParser.ALTBEACON_LAYOUT);
-        //beaconTransmitter = new BeaconTransmitter(context, beaconParser);
-        //beaconTransmitter.setBeacon(createBeacon());
-
         beaconManager.getBeaconParsers().add(beaconParser);
 
-
+        /**
+         * Constructs a new Region object to be used for Ranging or Monitoring
+         * @param uniqueId - A unique identifier used to later cancel Ranging and
+         *                 Monitoring, or change the region being Ranged/Monitored
+         * @param id1 - most significant identifier (can be null)
+         * @param id2 - second most significant identifier (can be null)
+         * @param id3 - third most significant identifier (can be null)
+         */
 
         Region region = new Region("backgroundRegion", null, null, null);
-        // simplywake up the app when a beacon is seen
+        // simply wake up the app when a beacon is seen
         regionBootstrap = new RegionBootstrap(this, region);
 
         // simply constructing this class and holding a reference to it in your custom Application
@@ -79,8 +70,7 @@ public class ScannerApplication extends Application implements BootstrapNotifier
         // is not visible.  This reduces bluetooth power usage by about 60%
         backgroundPowerSaver = new BackgroundPowerSaver(this);
 
-        Log.d(TAG, "onCreate ScannerApplication, setting up " +
-                "background monitoring for beacons and power saving");
+
         Log.d(TAG, " isBackgroundModeUninitialized "
                 + beaconManager.isBackgroundModeUninitialized());
 
@@ -100,17 +90,17 @@ public class ScannerApplication extends Application implements BootstrapNotifier
 
     }
 
+    /**
+     * Called when at least one beacon in a <code>Region</code> is visible.
+     * @param region a Region that defines the criteria of beacons to look for
+     * Tells the BeaconService to start looking for beacons that match the
+     * passed Region object, and providing updates on the estimated mDistance
+     * every seconds while beacons in theRegion are visible.
+     */
     @Override
     public void didEnterRegion(Region region) {
         // In this example, this class sends a notification to the user whenever a Beacon
         // matching a Region (defined above) are first seen.
-        Log.d(TAG, " didEnterRegion, should send notification!");
-
-        //        ((ScannerApplication) this.getApplicationContext()).setReflectorActivity(this);
-        NotificationHelper.sendNotification(this, "Nutihelkur", "didEnterRegion worked");
-        realmWorked();
-
-
         try {
             beaconManager.startRangingBeaconsInRegion(region);
         }
@@ -119,9 +109,9 @@ public class ScannerApplication extends Application implements BootstrapNotifier
         }
     }
 
-    public void realmWorked() {
-        RealmResults<Sensor> result = realm.where(Sensor.class).findAll();
-
+  public void realmWorked() {
+      Log.d(TAG, "realmworked kaivatutud");
+      RealmResults<Sensor> result = RealmManager.createSensorDao().loadAll();;
 
         for(Sensor sensor : result) {
             Log.d(TAG, "realmworked !!!! SensorId " + sensor.getSensorId()  + "Location" + sensor.getLocation());
@@ -140,9 +130,8 @@ public class ScannerApplication extends Application implements BootstrapNotifier
             e.printStackTrace();
         }
         if (reflectorActivity != null) {
-            reflectorActivity.logToDisplay("NO DANGEROUS PLACES atm");
+            reflectorActivity.logToDisplay("NO DANGEROUS PLACES");
         }
-
     }
 
     // OUTSIDE val 0, MonitorNotifier.INSIDE val 1
@@ -162,9 +151,7 @@ public class ScannerApplication extends Application implements BootstrapNotifier
         this.reflectorActivity = activity;
     }
 
-
-
-
+    
     /**
      * Called once per second to give an estimate of the mDistance to visible beacons
      * @param beacons a collection of <code>Beacon<code> objects that have been seen in the past second
@@ -172,24 +159,23 @@ public class ScannerApplication extends Application implements BootstrapNotifier
      */
     @Override
     public void didRangeBeaconsInRegion(Collection<Beacon> beacons, Region region) {
+
+        //miks pean siin uuesti avama???
+        RealmManager.open();
         if (beacons.size() > 0) {
             Log.d(TAG, " didRangeBeaconsInRegion found beacons - but if it get id1?");
             for (Beacon b : beacons) {
-                String a = b.getId1().toString();
-                String aa = "5a4bcfce-174e-4bac-a814-092e77f6b7e5";
+                boolean x = RealmManager.createSensorDao().isValidSensor(b.getId1().toString());
+                if (x == true) {
+                    String f = RealmManager.createSensorDao().loadSensorLocation(b.getId1().toString());
+                   NotificationHelper.sendNotification(this, "Nutihelkur, olete ohtlikus kohas: ", f);
+                    Log.d(TAG, " load sesnor location ja is valid sensor töötavad ehk...." + x );
 
-                Log.d(TAG, "ID2 on " + a + " peaks olema " + "5A4BCFCE-174E-4BAC-A814-092E77F6B7E5");
-               // if(b.getId1().toString().equals("5a4bcfce-17ae-4Bac-a814-092e77f6b7e5")) {
-                    Log.d(TAG, " getId edukas Beacon with my Instance ID found!" + a.equals(aa));
-                Log.d(TAG, " getId edukas Beacon with my Instance ID found!" + a );
-                Log.d(TAG, " getId edukas Beacon with my Instance ID found!" + aa );
-
-
-                    //sendNotification("Beacon with my Instance ID found!");
+                } else {
+                    Log.d(TAG, "MINGI ERROR SESOSES LOAD SENSOR LOCATION JA VALID SESNORIGA" + x + b.getId1().toString());
                 }
             }
-
-        //}
+        }
     }
 
     @Override

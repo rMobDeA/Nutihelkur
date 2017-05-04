@@ -15,18 +15,24 @@ public class Sensor extends RealmObject {
     private String location;
 
     public String getSensorId() {
+
         return sensorId;
     }
 
     public String getLocation() {
+
         return location;
     }
 
     public void setSensorId(String sensorId) {
+
         this.sensorId = sensorId;
     }
 
     public void setLocation(String location) {
+
         this.location = location;
     }
+
+    //oneliner setter?
 }

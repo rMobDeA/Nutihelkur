@@ -4,6 +4,7 @@ import android.Manifest;
 import android.annotation.TargetApi;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -22,17 +23,23 @@ import android.widget.Toast;
 
 import com.example.rmacintosh.nutihelkur.applications.ScannerApplication;
 import com.example.rmacintosh.nutihelkur.bluetooth.Transmitter;
+import com.example.rmacintosh.nutihelkur.dao.SensorDao;
 import com.example.rmacintosh.nutihelkur.helpers.BluetoothHelper;
 import com.example.rmacintosh.nutihelkur.models.Sensor;
 
 import org.altbeacon.beacon.BeaconManager;
 import org.altbeacon.beacon.BeaconTransmitter;
 import org.altbeacon.beacon.BleNotAvailableException;
+import org.w3c.dom.Text;
 
 import io.realm.Realm;
 import io.realm.RealmResults;
 
 import com.example.rmacintosh.nutihelkur.ReflectorActivity;
+import com.example.rmacintosh.nutihelkur.utils.RealmManager;
+import com.example.rmacintosh.nutihelkur.utils.SensorsGenerator;
+
+import java.util.List;
 
 public class ReflectorActivity extends AppCompatActivity {
 
@@ -43,42 +50,92 @@ public class ReflectorActivity extends AppCompatActivity {
     private Transmitter transmitter2;
     private String id = "5a4bcfce-174e-4bac-a814-092e77f6b7e5";
     private String linn ="lammas";
-    TextView textViewStatsData;
+    TextView textViewActivated, textViewActivatedC,
+    textViewData, textViewDataCount, textViewDataContent;
     Realm realm;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_reflector);
+
 
 
         /*
         Realm.init(this);
-    RealmConfiguration config = new RealmConfiguration.Builder().build();
-    Realm.setDefaultConfiguration(config);
+        RealmConfiguration config = new RealmConfiguration.Builder().build();
+        Realm.setDefaultConfiguration(config);
          */
-        realm = Realm.getDefaultInstance();
-
-        setr();
-
-        setContentView(R.layout.activity_reflector);
-
-        textViewStatsData = (TextView) findViewById(R.id.textViewStatsData);
-        textViewStatsData.setMovementMethod(new ScrollingMovementMethod());
-
-
-        //writeSensorToDatabase("5a4bcfce-174e-4bac-a814-092e77f6b7e5", "Annelinn");
-        bluetoothStatus();
         beaconManager2 = BeaconManager.getInstanceForApplication(this);
-        logToDisplay("Test sussesful");
+
+        textViewDataContent = (TextView) findViewById(R.id.textViewDataContent);
+        textViewDataContent.setMovementMethod(new ScrollingMovementMethod());
+
+        initViews();
+        RealmManager.open();
+        bluetoothStatus();
+        permissionCheck();
+        firstStartUp();
+        startBeaconTransmitService();
+        startTransmitting();
 
 
-        // ONLY FOR NEWER THAN LOLLIPOP
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP) {
-            startBeaconTransmitService();
-            startTransmitting(); // checki õigust igaks juks, vb peaks väljas olema
+        //realm = Realm.getDefaultInstance();
 
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+
+        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                //showSensorsList();
+                RealmResults<Sensor> result = RealmManager.createSensorDao().loadAll();
+                  textViewDataContent.setText("");
+
+                  for(Sensor sensor : result){
+                      textViewDataContent.append("SensorId " + sensor.getSensorId() + "\n" + "Location " + sensor.getLocation() + "\n");
+
+                }
+                Snackbar.make(view, "preDef Sensors Count: " +
+                        RealmManager.createSensorDao().count() , Snackbar.LENGTH_LONG)
+                        .setAction("Action", null).show();
+
+
+            }
+        });
+    }
+
+    private void showSensorsList() {
+
+    }
+
+
+
+/*
+ RealmResults<Sensor> result = realm.where(Sensor.class).findAll();
+
+        textViewStatsData.setText("");
+
+        for(Sensor sensor : result){
+            textViewStatsData.append("SensorId " + sensor.getSensorId() + "\n" + "Location" + sensor.getLocation() + "\n");
         }
-        //
+ */
+
+
+
+
+    private void initViews() {
+        //ertextViewStatsData = (TextView) findViewById(R.id.textViewStatsData);
+        textViewActivated = (TextView) findViewById(R.id.textViewActivated);
+        textViewActivatedC = (TextView) findViewById(R.id.textViewActivatedC);
+        textViewData = (TextView) findViewById(R.id.textViewData);
+        textViewDataCount = (TextView) findViewById(R.id.textViewDataCount);
+
+
+    }
+
+    private void permissionCheck() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             // Android M Permission check
             if (this.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -94,47 +151,35 @@ public class ReflectorActivity extends AppCompatActivity {
                         requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION},
                                 PERMISSION_REQUEST_COARSE_LOCATION);
                     }
-
                 });
                 builder.show();
             }
         }
-
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                getStats();
-                Snackbar.make(view, "Did data appeared?", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-
-            }
-        });
-
-
-
     }
 
-    public void setr() {
-        realm.beginTransaction();
-        Sensor sensor1 = realm.createObject(Sensor.class); // Create a new object
-        sensor1.setSensorId(id);
-        sensor1.setLocation(linn);
-        realm.commitTransaction();
-    }
+    /**
+     * Checks if app has ran ever before to prevent dublicating Sensor Database.
+     * If first time generates Sensors Database.
+     */
+    private void firstStartUp() {
+        Boolean isFirstRun = getSharedPreferences("PREFERENCE", MODE_PRIVATE).getBoolean("isfirstrun", true);
 
-    public void getStats() {
-        RealmResults<Sensor> result = realm.where(Sensor.class).findAll();
+        if(isFirstRun) {
 
-        textViewStatsData.setText("");
-
-        for(Sensor sensor : result){
-            textViewStatsData.append("SensorId " + sensor.getSensorId() + "\n" + "Location" + sensor.getLocation() + "\n");
+            RealmManager.createSensorDao().
+                    savePreDefSenorList(SensorsGenerator.generatePreSensorList());
+            Toast.makeText(this, "FIRST RUN", Toast.LENGTH_SHORT).show();
+            getSharedPreferences("PREFERENCE", MODE_PRIVATE).edit().putBoolean("isfirstrun", false).commit();
         }
+        /*
+        private void saveUserList() {
+        RealmManager.createUserDao().save(DataGenerator.generateUserList());
     }
+         */
+    }
+
+    //
+
 
  /*   private void writeSensorToDatabase(final String sensorId, final String location) {
         realm.executeTransactionAsync(new Realm.Transaction() {
