@@ -45,18 +45,17 @@ public class Transmitter {
                 .setTxPower(-59)
                 .setDataFields(Arrays.asList(new Long[] {0l}))
                 .build();
-        // .setId1(preferences.getString("key_beacon_uuid", "0"))
-        //.setId2(preferences.getString("key_major", "0"))
-        //.setId3(preferences.getString("key_minor", "0"))
-        //.setManufacturer(0x0118)
-        //.setTxPower(Integer.parseInt(preferences.getString("key_power", "-59")))
-        //.setDataFields(Arrays.asList(new Long[]{0l}))
-        //.build();
+
     }
 
-    //set advertisemode 3 10 1
+    /**
+     * AdvertiseSettings.ADVERTISE_MODE_BALANCED 3 Hz
+     * AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY 10 Hz
+     * AdvertiseSettings.ADVERTISE_MODE_LOW_POWER 1 Hz
+     */
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     private void setAdvertisingMode() {
+
         beaconTransmitter.setAdvertiseMode(10);
     }
 

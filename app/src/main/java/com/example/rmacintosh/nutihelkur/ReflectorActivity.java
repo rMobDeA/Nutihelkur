@@ -4,7 +4,6 @@ import android.Manifest;
 import android.annotation.TargetApi;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -17,29 +16,26 @@ import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.EditText;
+import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.rmacintosh.nutihelkur.applications.ScannerApplication;
 import com.example.rmacintosh.nutihelkur.bluetooth.Transmitter;
-import com.example.rmacintosh.nutihelkur.dao.SensorDao;
 import com.example.rmacintosh.nutihelkur.helpers.BluetoothHelper;
-import com.example.rmacintosh.nutihelkur.models.Sensor;
+import com.example.rmacintosh.nutihelkur.helpers.TimeHelper;
 
 import org.altbeacon.beacon.BeaconManager;
 import org.altbeacon.beacon.BeaconTransmitter;
 import org.altbeacon.beacon.BleNotAvailableException;
-import org.w3c.dom.Text;
 
 import io.realm.Realm;
 import io.realm.RealmResults;
 
-import com.example.rmacintosh.nutihelkur.ReflectorActivity;
+import com.example.rmacintosh.nutihelkur.models.Statistics;
 import com.example.rmacintosh.nutihelkur.utils.RealmManager;
 import com.example.rmacintosh.nutihelkur.utils.SensorsGenerator;
 
-import java.util.List;
 
 public class ReflectorActivity extends AppCompatActivity {
 
@@ -48,8 +44,6 @@ public class ReflectorActivity extends AppCompatActivity {
 
     private BeaconManager beaconManager2;
     private Transmitter transmitter2;
-    private String id = "5a4bcfce-174e-4bac-a814-092e77f6b7e5";
-    private String linn ="lammas";
     TextView textViewActivated, textViewActivatedC,
     textViewData, textViewDataCount, textViewDataContent;
     Realm realm;
@@ -59,13 +53,6 @@ public class ReflectorActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_reflector);
 
-
-
-        /*
-        Realm.init(this);
-        RealmConfiguration config = new RealmConfiguration.Builder().build();
-        Realm.setDefaultConfiguration(config);
-         */
         beaconManager2 = BeaconManager.getInstanceForApplication(this);
 
         textViewDataContent = (TextView) findViewById(R.id.textViewDataContent);
@@ -80,7 +67,6 @@ public class ReflectorActivity extends AppCompatActivity {
         startTransmitting();
 
 
-        //realm = Realm.getDefaultInstance();
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -89,44 +75,39 @@ public class ReflectorActivity extends AppCompatActivity {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                //showSensorsList();
-                RealmResults<Sensor> result = RealmManager.createSensorDao().loadAll();
-                  textViewDataContent.setText("");
 
-                  for(Sensor sensor : result){
-                      textViewDataContent.append("SensorId " + sensor.getSensorId() + "\n" + "Location " + sensor.getLocation() + "\n");
+              RealmManager.open();
+                RealmResults<Statistics> result = RealmManager.createStatisticsDao().loadAll();
+                textViewDataContent.setText("");
 
+                for(Statistics sensor : result){
+                    textViewDataContent.append(sensor.getLocation() + " C:  " + sensor.getCount() +
+                            "\n" + "Date: " + TimeHelper.getDate(sensor.getDate()) + "\n");
                 }
                 Snackbar.make(view, "preDef Sensors Count: " +
-                        RealmManager.createSensorDao().count() , Snackbar.LENGTH_LONG)
+                        RealmManager.createStatisticsDao().count() + "\n" , Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
 
 
             }
         });
+
+        Button buttonClear = (Button) findViewById(R.id.buttonClear);
+        buttonClear.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick (View view) {
+                RealmManager.open();
+                RealmManager.createStatisticsDao().removeAll();
+            }
+        });
     }
 
-    private void showSensorsList() {
-
-    }
-
-
-
-/*
- RealmResults<Sensor> result = realm.where(Sensor.class).findAll();
-
-        textViewStatsData.setText("");
-
-        for(Sensor sensor : result){
-            textViewStatsData.append("SensorId " + sensor.getSensorId() + "\n" + "Location" + sensor.getLocation() + "\n");
-        }
- */
 
 
 
 
     private void initViews() {
-        //ertextViewStatsData = (TextView) findViewById(R.id.textViewStatsData);
+        //ertextViewStatsData = (TextView) findViewById(R.id.);
         textViewActivated = (TextView) findViewById(R.id.textViewActivated);
         textViewActivatedC = (TextView) findViewById(R.id.textViewActivatedC);
         textViewData = (TextView) findViewById(R.id.textViewData);
@@ -171,36 +152,7 @@ public class ReflectorActivity extends AppCompatActivity {
             Toast.makeText(this, "FIRST RUN", Toast.LENGTH_SHORT).show();
             getSharedPreferences("PREFERENCE", MODE_PRIVATE).edit().putBoolean("isfirstrun", false).commit();
         }
-        /*
-        private void saveUserList() {
-        RealmManager.createUserDao().save(DataGenerator.generateUserList());
     }
-         */
-    }
-
-    //
-
-
- /*   private void writeSensorToDatabase(final String sensorId, final String location) {
-        realm.executeTransactionAsync(new Realm.Transaction() {
-            @Override
-            public void execute(Realm bgRealm) {
-                Sensor sensor = bgRealm.createObject(Sensor.class);
-                sensor.setSensorId(sensorId);
-                sensor.setLocation(location);
-            }
-        }, new Realm.Transaction.OnSuccess() {
-            @Override
-            public void onSuccess() {
-                Log.d(TAG, "DataBase execute onSuccess()");
-            }
-        }, new Realm.Transaction.OnError() {
-            @Override
-            public void onError(Throwable error) {
-                Log.d(TAG, "DataBase execute onError: " + error.getMessage());
-            }
-        });
-    }*/
 
     @Override
     public void onRequestPermissionsResult(int requestCode,
@@ -212,7 +164,8 @@ public class ReflectorActivity extends AppCompatActivity {
                 } else {
                     final AlertDialog.Builder builder = new AlertDialog.Builder(this);
                     builder.setTitle("Functionality limited");
-                    builder.setMessage("Since location access has not been granted, this app will not be able to discover beacons when in the background.");
+                    builder.setMessage("Since location access has not been granted, " +
+                            "this app will not be able to discover beacons when in the background.");
                     builder.setPositiveButton(android.R.string.ok, null);
                     builder.setOnDismissListener(new DialogInterface.OnDismissListener() {
 
@@ -323,8 +276,8 @@ public class ReflectorActivity extends AppCompatActivity {
         try {
             if (!beaconManager2.checkAvailability()) {
                 Toast.makeText(this, "BLE NOT ON!",
-                        Toast.LENGTH_SHORT).show();            }
-            else {
+                        Toast.LENGTH_SHORT).show();
+            } else {
                 if (!(BeaconTransmitter.checkTransmissionSupported(this) == BeaconTransmitter.SUPPORTED)) {
                     Toast.makeText(this, "BLE advert no support!",
                             Toast.LENGTH_SHORT).show();

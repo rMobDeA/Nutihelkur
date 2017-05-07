@@ -14,14 +14,14 @@
         android:id="@+id/monitoringText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="BEACONS "
+        android:text=" "
         android:textColor="@color/white"
         android:textStyle="bold"
         app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintHorizontal_bias="0.165"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintHorizontal_bias="0.165"
         app:layout_constraintVertical_bias="0.097" />
 
     <TextView
@@ -97,15 +97,14 @@
         android:id="@+id/textViewActivated"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="App Is Started "
+        android:layout_marginBottom="186dp"
+        android:layout_marginEnd="66dp"
         android:textColor="@color/white"
         android:textStyle="bold"
-        tools:layout_constraintRight_creator="1"
-        tools:layout_constraintBottom_creator="1"
         app:layout_constraintBottom_toBottomOf="parent"
-        android:layout_marginEnd="66dp"
         app:layout_constraintRight_toRightOf="parent"
-        android:layout_marginBottom="186dp" />
+        tools:layout_constraintBottom_creator="1"
+        tools:layout_constraintRight_creator="1" />
 
     <TextView
         android:id="@+id/textViewActivatedC"
@@ -118,5 +117,20 @@
         app:layout_constraintTop_toBottomOf="@+id/textViewActivated"
         tools:layout_constraintLeft_creator="1"
         app:layout_constraintLeft_toLeftOf="@+id/textViewActivated" />
+
+    <Button
+        android:id="@+id/buttonClear"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="48dp"
+        android:layout_marginStart="47dp"
+        android:layout_marginTop="52dp"
+        android:text="CLEAR"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textViewSteps"
+        tools:layout_constraintBottom_creator="1"
+        tools:layout_constraintLeft_creator="1"
+        tools:layout_constraintTop_creator="1" />
 
 </android.support.constraint.ConstraintLayout>

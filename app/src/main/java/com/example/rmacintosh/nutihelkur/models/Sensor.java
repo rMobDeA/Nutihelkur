@@ -4,15 +4,27 @@ import io.realm.RealmObject;
 import io.realm.annotations.PrimaryKey;
 import io.realm.annotations.Required;
 
-/**
- * Created by rmacintosh on 03/05/2017.
- */
 
+/**
+ * String sensorId - AltBeacon UUID
+ * int locationId - AltBeacon ID2, max value 65 536
+ * String location - location name that connects to ID2
+ */
 public class Sensor extends RealmObject {
 
 
     private String sensorId;
+    private int locationId;
     private String location;
+
+    public int getLocationId() {
+
+        return locationId;
+    }
+
+    public void setLocationId(int locationId) {
+        this.locationId = locationId;
+    }
 
     public String getSensorId() {
 
@@ -34,5 +46,4 @@ public class Sensor extends RealmObject {
         this.location = location;
     }
 
-    //oneliner setter?
 }

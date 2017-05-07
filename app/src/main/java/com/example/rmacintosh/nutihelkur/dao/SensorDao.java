@@ -9,9 +9,6 @@ import java.util.List;
 import io.realm.Realm;
 import io.realm.RealmResults;
 
-/**
- * Created by rmacintosh on 04/05/2017.
- */
 
 public class SensorDao {
 
@@ -38,6 +35,14 @@ public class SensorDao {
        } else {
            return false;
        }
+    }
+
+    public String getSensorLocation(int locationId) {
+        if (mRealm.where(Sensor.class).equalTo("locationId", locationId).count() != 0) {
+            return mRealm.where(Sensor.class).equalTo("locationId", locationId).findFirst().getLocation();
+        } else {
+            return "ERROR, or sensor UUID has been cloned!";
+        }
     }
 
 
@@ -76,6 +81,7 @@ public class SensorDao {
 
         return mRealm.where(Sensor.class).count();
     }
+
 
 
 }

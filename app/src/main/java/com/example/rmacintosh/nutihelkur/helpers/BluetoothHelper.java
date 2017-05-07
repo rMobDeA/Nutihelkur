@@ -8,6 +8,10 @@ import android.bluetooth.BluetoothAdapter;
 
 public class BluetoothHelper {
 
+    /**
+     * Check if bluetooth is turned on.
+     * When off, bluetooth will be turned on.
+     */
     public static void isBluetoothOn() {
         BluetoothAdapter mBtAdapter = BluetoothAdapter.getDefaultAdapter();
         if (!mBtAdapter.isEnabled()) {
@@ -16,15 +20,15 @@ public class BluetoothHelper {
     }
 
 
-        /*
-        SUPPORTED 0
-        NOT_SUPPORTED_MIN_SDK 1
-        NOT_SUPPORTED_BLE 2
-        NOT_SUPPORTED_MULTIPLE_ADVERTISEMENTS 3
-        NOT_SUPPORTED_CANNOT_GET_ADVERTISER 4
-        NOT_SUPPORTED_CANNOT_GET_ADVERTISER_MULTIPLE_ADVERTISEMENTS 5
-         */
-
+    /**
+     * @param code  SUPPORTED 0
+                    NOT_SUPPORTED_MIN_SDK 1
+                    NOT_SUPPORTED_BLE 2
+                    NOT_SUPPORTED_MULTIPLE_ADVERTISEMENTS 3
+                    NOT_SUPPORTED_CANNOT_GET_ADVERTISER 4
+                    NOT_SUPPORTED_CANNOT_GET_ADVERTISER_MULTIPLE_ADVERTISEMENTS 5
+     * @return code translated to text
+     */
     public static String bleCompatibility(int code){
         String compatibility;
         if (code == 0) {

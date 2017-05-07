@@ -1,21 +1,20 @@
 package com.example.rmacintosh.nutihelkur.applications;
 
 import android.app.Application;
-import android.content.Intent;
 import android.os.RemoteException;
 import android.util.Log;
 
 import com.example.rmacintosh.nutihelkur.BuildConfig;
 import com.example.rmacintosh.nutihelkur.ReflectorActivity;
-import com.example.rmacintosh.nutihelkur.dao.SensorDao;
 import com.example.rmacintosh.nutihelkur.helpers.NotificationHelper;
-import com.example.rmacintosh.nutihelkur.models.Sensor;
+import com.example.rmacintosh.nutihelkur.helpers.TimeHelper;
 import com.example.rmacintosh.nutihelkur.utils.RealmManager;
 
 import org.altbeacon.beacon.Beacon;
 import org.altbeacon.beacon.BeaconConsumer;
 import org.altbeacon.beacon.BeaconManager;
 import org.altbeacon.beacon.BeaconParser;
+import org.altbeacon.beacon.Identifier;
 import org.altbeacon.beacon.RangeNotifier;
 import org.altbeacon.beacon.Region;
 import org.altbeacon.beacon.powersave.BackgroundPowerSaver;
@@ -26,7 +25,6 @@ import java.util.Collection;
 
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
-import io.realm.RealmResults;
 
 
 public class ScannerApplication extends Application implements BootstrapNotifier,
@@ -45,7 +43,6 @@ public class ScannerApplication extends Application implements BootstrapNotifier
         Realm.setDefaultConfiguration(config);
         RealmManager.open();
 
-        realmWorked();
 
         beaconManager = BeaconManager.getInstanceForApplication(this);
         // http://stackoverflow.com/questions/33594197/altbeacon-setbeaconlayout
@@ -61,7 +58,10 @@ public class ScannerApplication extends Application implements BootstrapNotifier
          * @param id3 - third most significant identifier (can be null)
          */
 
-        Region region = new Region("backgroundRegion", null, null, null);
+        // PARSES our sensor UUID to Identifier
+        Identifier x  = Identifier.parse("52414449-5553-4e45-5457-4f524b53434f");
+
+        Region region = new Region("backgroundRegion", x , null, null);
         // simply wake up the app when a beacon is seen
         regionBootstrap = new RegionBootstrap(this, region);
 
@@ -74,13 +74,13 @@ public class ScannerApplication extends Application implements BootstrapNotifier
         Log.d(TAG, " isBackgroundModeUninitialized "
                 + beaconManager.isBackgroundModeUninitialized());
 
-        /*
-            DEFAULT_BACKGROUND_BETWEEN_SCAN_PERIOD	300000L
-            DEFAULT_BACKGROUND_SCAN_PERIOD	10000L
-            DEFAULT_EXIT_PERIOD	10000L
-            DEFAULT_FOREGROUND_BETWEEN_SCAN_PERIOD	0L
-            DEFAULT_FOREGROUND_SCAN_PERIOD	1100L
-         */
+
+        // DEFAULT_BACKGROUND_BETWEEN_SCAN_PERIOD	300000L
+        // DEFAULT_BACKGROUND_SCAN_PERIOD	10000L
+        // DEFAULT_EXIT_PERIOD	10000L
+        // DEFAULT_FOREGROUND_BETWEEN_SCAN_PERIOD	0L
+        // DEFAULT_FOREGROUND_SCAN_PERIOD	1100L
+
 
         beaconManager.setBackgroundBetweenScanPeriod(1000l);
         beaconManager.setBackgroundScanPeriod(1000l);
@@ -109,14 +109,6 @@ public class ScannerApplication extends Application implements BootstrapNotifier
         }
     }
 
-  public void realmWorked() {
-      Log.d(TAG, "realmworked kaivatutud");
-      RealmResults<Sensor> result = RealmManager.createSensorDao().loadAll();;
-
-        for(Sensor sensor : result) {
-            Log.d(TAG, "realmworked !!!! SensorId " + sensor.getSensorId()  + "Location" + sensor.getLocation());
-        }
-    }
 
     /**
      * Called when at least one beacon in a <code>Region</code> is visible.
@@ -130,17 +122,22 @@ public class ScannerApplication extends Application implements BootstrapNotifier
             e.printStackTrace();
         }
         if (reflectorActivity != null) {
-            reflectorActivity.logToDisplay("NO DANGEROUS PLACES");
+            reflectorActivity.logToDisplay("NO SENSORS IN REGION");
         }
     }
 
-    // OUTSIDE val 0, MonitorNotifier.INSIDE val 1
+
+    /**
+     *
+     * @param i MonitorNotifier -> outside - 1, inside 1
+     * @param region
+     */
     @Override
     public void didDetermineStateForRegion(int i, Region region) {
         if (i == 0) {
-            Log.d(TAG, " CANT SEE ANY SENSOR");
+            Log.d(TAG, "NO SENSORS IN REGION");
         } else {
-            Log.d(TAG, " WELL LUCKY YOU, AT LEAST ONE SENSOR!");
+            Log.d(TAG, "AT LEAST ONE SENSOR IN REGION");
         }
 
     }
@@ -151,28 +148,34 @@ public class ScannerApplication extends Application implements BootstrapNotifier
         this.reflectorActivity = activity;
     }
 
-    
     /**
      * Called once per second to give an estimate of the mDistance to visible beacons
-     * @param beacons a collection of <code>Beacon<code> objects that have been seen in the past second
+     * @param sensors a collection of <code>Beacon<code> objects that have been seen in the past second
      * @param region the <code>Region</code> object that defines the criteria for the ranged beacons
+     *
+     *               Sends notification and writes sensor data to Realm if
+     *               there hasn't been same sensor entry for 120 seconds.
      */
     @Override
-    public void didRangeBeaconsInRegion(Collection<Beacon> beacons, Region region) {
-
-        //miks pean siin uuesti avama???
+    public void didRangeBeaconsInRegion(Collection<Beacon> sensors, Region region) {
         RealmManager.open();
-        if (beacons.size() > 0) {
-            Log.d(TAG, " didRangeBeaconsInRegion found beacons - but if it get id1?");
-            for (Beacon b : beacons) {
-                boolean x = RealmManager.createSensorDao().isValidSensor(b.getId1().toString());
-                if (x == true) {
-                    String f = RealmManager.createSensorDao().loadSensorLocation(b.getId1().toString());
-                   NotificationHelper.sendNotification(this, "Nutihelkur, olete ohtlikus kohas: ", f);
-                    Log.d(TAG, " load sesnor location ja is valid sensor töötavad ehk...." + x );
-
+        if (sensors.size() > 0) {
+            for (Beacon sensor : sensors) {
+                int sensorLocationId = sensor.getId2().toInt();
+                long locatingTime = TimeHelper.getTime();
+                    if (RealmManager.createStatisticsDao().notInDatabase(
+                        sensorLocationId, locatingTime)) {
+                            String beaconLocation = RealmManager.createSensorDao().
+                                getSensorLocation(sensorLocationId);
+                            int usageCount = sensor.getId3().toInt();
+                            RealmManager.createStatisticsDao().writeToDatabase(
+                                    beaconLocation,
+                                    sensorLocationId,
+                                    locatingTime,
+                                    usageCount);
+                            NotificationHelper.sendNotification(this, "Nutihelkur", beaconLocation);
                 } else {
-                    Log.d(TAG, "MINGI ERROR SESOSES LOAD SENSOR LOCATION JA VALID SESNORIGA" + x + b.getId1().toString());
+                    Log.d(TAG, "SENSOR ALREADY IN DATABASE!");
                 }
             }
         }

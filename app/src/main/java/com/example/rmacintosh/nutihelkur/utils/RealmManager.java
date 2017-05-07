@@ -7,9 +7,6 @@ import com.example.rmacintosh.nutihelkur.models.Statistics;
 
 import io.realm.Realm;
 
-/**
- * Created by rmacintosh on 04/05/2017.
- */
 
 public class RealmManager {
 

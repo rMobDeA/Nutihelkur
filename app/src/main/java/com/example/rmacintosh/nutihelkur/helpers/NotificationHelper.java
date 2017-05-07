@@ -6,9 +6,6 @@ import android.support.v4.app.NotificationCompat;
 
 import com.example.rmacintosh.nutihelkur.R;
 
-/**
- * Created by rmacintosh on 01/05/2017.
- */
 
 public class NotificationHelper {
 
