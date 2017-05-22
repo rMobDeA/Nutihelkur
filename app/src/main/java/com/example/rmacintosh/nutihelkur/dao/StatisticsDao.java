@@ -7,6 +7,20 @@ import com.example.rmacintosh.nutihelkur.models.Statistics;
 import io.realm.Realm;
 import io.realm.RealmResults;
 
+/**
+ *                    created by Rauno Pügi
+ *
+ *       significant help for learning and understanding processes:
+ *       - https://github.com/AltBeacon/android-beacon-library-reference
+ *       - https://github.com/uriio/beacons-android
+ *       - https://github.com/beaconinside/awesome-beacon
+ *       - https://github.com/BoydHogerheijde/Beacon-Scanner
+ *       - https://github.com/Bridouille/android-beacon-scanner
+ *       - https://github.com/justinodwyer/Beacon-Scanner-and-Logger
+ *
+ *        thanks to Radius Networks for providing a great beacon library,
+ *        support and information
+ */
 
 public class StatisticsDao {
 
@@ -65,6 +79,8 @@ public class StatisticsDao {
      * @param locationId         location where sensor was located
      * @param sensorLocationTime time when sensor was located in seconds since 1970
      * @return boolean, if that sensor has been located in that location before during 120 seconds
+     *
+     * // should have used realm.where(object).max("id").intValue()
      */
 
 

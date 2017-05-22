@@ -7,8 +7,20 @@ import com.example.rmacintosh.nutihelkur.models.Sensor;
 import java.util.ArrayList;
 import java.util.List;
 
+
 /**
- * To generate predefined sensors for naming found beacons by location.
+ *                  created by Rauno Pügi
+ *
+ *       significant help for learning and understanding processes:
+ *       - https://github.com/AltBeacon/android-beacon-library-reference
+ *       - https://github.com/uriio/beacons-android
+ *       - https://github.com/beaconinside/awesome-beacon
+ *       - https://github.com/BoydHogerheijde/Beacon-Scanner
+ *       - https://github.com/Bridouille/android-beacon-scanner
+ *       - https://github.com/justinodwyer/Beacon-Scanner-and-Logger
+ *
+ *        thanks to Radius Networks for providing a great beacon library,
+ *        support and information
  */
 
 public class SensorsGenerator {
@@ -42,10 +54,10 @@ public class SensorsGenerator {
         sensor4.setLocationId(4);
         sensor5.setLocationId(5);
 
-        sensor1.setLocation("Annelinna Keskuse zebra");
+        sensor1.setLocation("Annelinna Keskus");
         sensor2.setLocation("Novira Plaza parkla");
         sensor3.setLocation("Tulika bussipeatus");
-        sensor4.setLocation("Siili kaklusbaar");
+        sensor4.setLocation("Nutihelkuri koduhoov");
         sensor5.setLocation("Pirogovi plats");
 
         sensorsList.add(sensor1);

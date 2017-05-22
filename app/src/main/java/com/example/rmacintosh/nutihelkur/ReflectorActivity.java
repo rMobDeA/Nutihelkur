@@ -27,15 +27,27 @@ import com.example.rmacintosh.nutihelkur.helpers.TimeHelper;
 
 import org.altbeacon.beacon.BeaconManager;
 import org.altbeacon.beacon.BeaconTransmitter;
-import org.altbeacon.beacon.BleNotAvailableException;
 
-import io.realm.Realm;
 import io.realm.RealmResults;
 
 import com.example.rmacintosh.nutihelkur.models.Statistics;
 import com.example.rmacintosh.nutihelkur.utils.RealmManager;
 import com.example.rmacintosh.nutihelkur.utils.SensorsGenerator;
 
+/**
+ *                  created by Rauno Pügi
+ *
+ *       significant help for learning and understanding processes:
+ *       - https://github.com/AltBeacon/android-beacon-library-reference
+ *       - https://github.com/uriio/beacons-android
+ *       - https://github.com/beaconinside/awesome-beacon
+ *       - https://github.com/BoydHogerheijde/Beacon-Scanner
+ *       - https://github.com/Bridouille/android-beacon-scanner
+ *       - https://github.com/justinodwyer/Beacon-Scanner-and-Logger
+ *
+ *        thanks to Radius Networks for providing a great beacon library,
+ *        support and information
+ */
 
 public class ReflectorActivity extends AppCompatActivity {
 
@@ -45,8 +57,8 @@ public class ReflectorActivity extends AppCompatActivity {
     private BeaconManager beaconManager2;
     private Transmitter transmitter2;
     TextView textViewActivated, textViewActivatedC,
-    textViewData, textViewDataCount, textViewDataContent;
-    Realm realm;
+    textViewData, textViewDataContent;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,7 +66,6 @@ public class ReflectorActivity extends AppCompatActivity {
         setContentView(R.layout.activity_reflector);
 
         beaconManager2 = BeaconManager.getInstanceForApplication(this);
-
         textViewDataContent = (TextView) findViewById(R.id.textViewDataContent);
         textViewDataContent.setMovementMethod(new ScrollingMovementMethod());
 
@@ -63,10 +74,6 @@ public class ReflectorActivity extends AppCompatActivity {
         bluetoothStatus();
         permissionCheck();
         firstStartUp();
-        startBeaconTransmitService();
-        startTransmitting();
-
-
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -75,20 +82,19 @@ public class ReflectorActivity extends AppCompatActivity {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-
-              RealmManager.open();
+                RealmManager.open();
                 RealmResults<Statistics> result = RealmManager.createStatisticsDao().loadAll();
                 textViewDataContent.setText("");
 
-                for(Statistics sensor : result){
-                    textViewDataContent.append(sensor.getLocation() + " C:  " + sensor.getCount() +
-                            "\n" + "Date: " + TimeHelper.getDate(sensor.getDate()) + "\n");
+                for (Statistics sensor : result){
+                    textViewDataContent.append(sensor.getLocation() + "\n" + "  Lights used:  "
+                            + sensor.getCount() + "\n"
+                            + "  Date: " + TimeHelper.getDate(sensor.getDate()) + "\n");
                 }
-                Snackbar.make(view, "preDef Sensors Count: " +
+
+                Snackbar.make(view, "Data to Send: " +
                         RealmManager.createStatisticsDao().count() + "\n" , Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
-
-
             }
         });
 
@@ -102,23 +108,18 @@ public class ReflectorActivity extends AppCompatActivity {
         });
     }
 
-
-
-
-
     private void initViews() {
-        //ertextViewStatsData = (TextView) findViewById(R.id.);
         textViewActivated = (TextView) findViewById(R.id.textViewActivated);
         textViewActivatedC = (TextView) findViewById(R.id.textViewActivatedC);
         textViewData = (TextView) findViewById(R.id.textViewData);
-        textViewDataCount = (TextView) findViewById(R.id.textViewDataCount);
-
-
     }
 
+    /**
+     * Android M Permission check
+     * Code from https://altbeacon.github.io/android-beacon-library/requesting_permission.html
+     */
     private void permissionCheck() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            // Android M Permission check
             if (this.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                 final AlertDialog.Builder builder = new AlertDialog.Builder(this);
                 builder.setTitle("This app needs location access");
@@ -139,21 +140,8 @@ public class ReflectorActivity extends AppCompatActivity {
     }
 
     /**
-     * Checks if app has ran ever before to prevent dublicating Sensor Database.
-     * If first time generates Sensors Database.
+     * Code from https://altbeacon.github.io/android-beacon-library/requesting_permission.html
      */
-    private void firstStartUp() {
-        Boolean isFirstRun = getSharedPreferences("PREFERENCE", MODE_PRIVATE).getBoolean("isfirstrun", true);
-
-        if(isFirstRun) {
-
-            RealmManager.createSensorDao().
-                    savePreDefSenorList(SensorsGenerator.generatePreSensorList());
-            Toast.makeText(this, "FIRST RUN", Toast.LENGTH_SHORT).show();
-            getSharedPreferences("PREFERENCE", MODE_PRIVATE).edit().putBoolean("isfirstrun", false).commit();
-        }
-    }
-
     @Override
     public void onRequestPermissionsResult(int requestCode,
                                            String permissions[], int[] grantResults) {
@@ -178,6 +166,22 @@ public class ReflectorActivity extends AppCompatActivity {
                 }
                 return;
             }
+        }
+    }
+
+    /**
+     * Checks if app has ran ever before to prevent dublicating Sensor Database.
+     * If first time generates Sensors Database.
+     */
+    private void firstStartUp() {
+        Boolean isFirstRun = getSharedPreferences("PREFERENCE", MODE_PRIVATE).getBoolean("isfirstrun", true);
+
+        if(isFirstRun) {
+
+            RealmManager.createSensorDao().
+                    savePreDefSenorList(SensorsGenerator.generatePreSensorList());
+            Toast.makeText(this, "FIRST RUN", Toast.LENGTH_SHORT).show();
+            getSharedPreferences("PREFERENCE", MODE_PRIVATE).edit().putBoolean("isfirstrun", false).commit();
         }
     }
 
@@ -216,15 +220,17 @@ public class ReflectorActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-
-
+    /**
+     * Android Beacon Library reference application has same method as verifyBluetooth():
+     * https://github.com/AltBeacon/android-beacon-library-reference/blob/master/app/src/main/
+     * java/org/altbeacon/beaconreference/MonitoringActivity.java
+     */
     private void bluetoothStatus() {
-
         try {
             if (!BeaconManager.getInstanceForApplication(this).checkAvailability()) {
                 final AlertDialog.Builder builder = new AlertDialog.Builder(this);
                 builder.setTitle("BLUETOOTH IS TURNED OFF");
-                builder.setMessage("PLEASE ENABLE BLUETOOTH");
+                builder.setMessage("PLEASE ENABLE BLUETOOTH AND RUN APPLICATION AGAIN TO");
                 builder.setPositiveButton(android.R.string.ok, null);
                 builder.setOnDismissListener(new DialogInterface.OnDismissListener() {
                     @Override
@@ -252,53 +258,6 @@ public class ReflectorActivity extends AppCompatActivity {
 
             });
             builder.show();
-
         }
-
-    }
-
-    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-    private void startBeaconTransmitService() {
-        transmitter2 = new Transmitter(this);
-    }
-
-    private void notifyTransmittingNotSupported() {
-        String bleProblem2 = BluetoothHelper.bleCompatibility(
-                BeaconTransmitter.checkTransmissionSupported(this));
-        new AlertDialog.Builder(this)
-                .setTitle("HOW YOU MADE SO FAR?")
-                .setMessage("BLE ERROR: " + bleProblem2)
-                .setPositiveButton(android.R.string.ok, null)
-                .show();
-    }
-
-    private void startTransmitting() {
-        try {
-            if (!beaconManager2.checkAvailability()) {
-                Toast.makeText(this, "BLE NOT ON!",
-                        Toast.LENGTH_SHORT).show();
-            } else {
-                if (!(BeaconTransmitter.checkTransmissionSupported(this) == BeaconTransmitter.SUPPORTED)) {
-                    Toast.makeText(this, "BLE advert no support!",
-                            Toast.LENGTH_SHORT).show();
-                    notifyTransmittingNotSupported();
-                } else if (transmitter2 != null) {
-
-                    transmitter2.startTransmitting();
-                }
-            }
-        } catch (BleNotAvailableException bleNotAvailableException) {
-            notifyTransmittingNotSupported();
-        }
-    }
-
-    public void logToDisplay(final String line) {
-        runOnUiThread(new Runnable() {
-            public void run() {
-                TextView textView = (TextView)ReflectorActivity.this
-                        .findViewById(R.id.monitoringText);
-                textView.append(line+"\n");
-            }
-        });
     }
 }

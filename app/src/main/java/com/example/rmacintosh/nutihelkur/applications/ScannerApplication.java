@@ -1,11 +1,21 @@
 package com.example.rmacintosh.nutihelkur.applications;
 
+import android.annotation.TargetApi;
+import android.app.AlertDialog;
 import android.app.Application;
+import android.content.Context;
+import android.hardware.display.DisplayManager;
+import android.media.AudioManager;
+import android.os.Build;
 import android.os.RemoteException;
 import android.util.Log;
+import android.view.Display;
+import android.widget.Toast;
 
 import com.example.rmacintosh.nutihelkur.BuildConfig;
 import com.example.rmacintosh.nutihelkur.ReflectorActivity;
+import com.example.rmacintosh.nutihelkur.bluetooth.Transmitter;
+import com.example.rmacintosh.nutihelkur.helpers.BluetoothHelper;
 import com.example.rmacintosh.nutihelkur.helpers.NotificationHelper;
 import com.example.rmacintosh.nutihelkur.helpers.TimeHelper;
 import com.example.rmacintosh.nutihelkur.utils.RealmManager;
@@ -14,6 +24,8 @@ import org.altbeacon.beacon.Beacon;
 import org.altbeacon.beacon.BeaconConsumer;
 import org.altbeacon.beacon.BeaconManager;
 import org.altbeacon.beacon.BeaconParser;
+import org.altbeacon.beacon.BeaconTransmitter;
+import org.altbeacon.beacon.BleNotAvailableException;
 import org.altbeacon.beacon.Identifier;
 import org.altbeacon.beacon.RangeNotifier;
 import org.altbeacon.beacon.Region;
@@ -26,6 +38,24 @@ import java.util.Collection;
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
 
+/**
+ *                      created by Rauno Pügi
+ *
+ *       significant help for learning and understanding processes:
+ *       - https://github.com/AltBeacon/android-beacon-library-reference
+ *       - https://github.com/uriio/beacons-android
+ *       - https://github.com/beaconinside/awesome-beacon
+ *       - https://github.com/BoydHogerheijde/Beacon-Scanner
+ *       - https://github.com/Bridouille/android-beacon-scanner
+ *       - https://github.com/justinodwyer/Beacon-Scanner-and-Logger
+ *
+ *        thanks to Radius Networks for providing a great beacon library,
+ *        support and information
+ *
+ *        ScannerApplication was created with help from:
+ *        https://altbeacon.github.io/android-beacon-library/samples.html
+ */
+
 
 public class ScannerApplication extends Application implements BootstrapNotifier,
         BeaconConsumer, RangeNotifier {
@@ -34,6 +64,7 @@ public class ScannerApplication extends Application implements BootstrapNotifier
     private RegionBootstrap regionBootstrap;
     private BackgroundPowerSaver backgroundPowerSaver;
     private ReflectorActivity reflectorActivity = null;
+    private Transmitter transmitter2;
     BeaconManager beaconManager;
 
     public void onCreate() {
@@ -45,9 +76,12 @@ public class ScannerApplication extends Application implements BootstrapNotifier
 
 
         beaconManager = BeaconManager.getInstanceForApplication(this);
-        // http://stackoverflow.com/questions/33594197/altbeacon-setbeaconlayout
         BeaconParser beaconParser = new BeaconParser().setBeaconLayout(BeaconParser.ALTBEACON_LAYOUT);
         beaconManager.getBeaconParsers().add(beaconParser);
+
+        startBeaconTransmitService();
+        startTransmitting();
+
 
         /**
          * Constructs a new Region object to be used for Ranging or Monitoring
@@ -86,9 +120,45 @@ public class ScannerApplication extends Application implements BootstrapNotifier
         beaconManager.setBackgroundScanPeriod(1000l);
         beaconManager.setForegroundBetweenScanPeriod(1000l);
         beaconManager.bind(this);
-
-
     }
+
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+    private void startBeaconTransmitService() {
+        transmitter2 = new Transmitter(this);
+    }
+
+
+
+    private void startTransmitting() {
+        try {
+            if (!beaconManager.checkAvailability()) {
+                Toast.makeText(this, "BLE NOT ON!",
+                        Toast.LENGTH_SHORT).show();
+            } else {
+                if (!(BeaconTransmitter.checkTransmissionSupported(this) == BeaconTransmitter.SUPPORTED)) {
+                    Toast.makeText(this, "BLE advert no support!",
+                            Toast.LENGTH_SHORT).show();
+                    notifyTransmittingNotSupported();
+                } else if (transmitter2 != null) {
+
+                    transmitter2.startTransmitting();
+                }
+            }
+        } catch (BleNotAvailableException bleNotAvailableException) {
+            notifyTransmittingNotSupported();
+        }
+    }
+
+    private void notifyTransmittingNotSupported() {
+        String bleProblem2 = BluetoothHelper.bleCompatibility(
+                BeaconTransmitter.checkTransmissionSupported(this));
+        new AlertDialog.Builder(this)
+                .setTitle("HOW YOU MADE SO FAR?")
+                .setMessage("BLE ERROR: " + bleProblem2)
+                .setPositiveButton(android.R.string.ok, null)
+                .show();
+    }
+
 
     /**
      * Called when at least one beacon in a <code>Region</code> is visible.
@@ -97,6 +167,7 @@ public class ScannerApplication extends Application implements BootstrapNotifier
      * passed Region object, and providing updates on the estimated mDistance
      * every seconds while beacons in theRegion are visible.
      */
+
     @Override
     public void didEnterRegion(Region region) {
         // In this example, this class sends a notification to the user whenever a Beacon
@@ -122,7 +193,6 @@ public class ScannerApplication extends Application implements BootstrapNotifier
             e.printStackTrace();
         }
         if (reflectorActivity != null) {
-            reflectorActivity.logToDisplay("NO SENSORS IN REGION");
         }
     }
 
@@ -165,6 +235,7 @@ public class ScannerApplication extends Application implements BootstrapNotifier
                 long locatingTime = TimeHelper.getTime();
                     if (RealmManager.createStatisticsDao().notInDatabase(
                         sensorLocationId, locatingTime)) {
+                        //getGpsCoordinates();
                             String beaconLocation = RealmManager.createSensorDao().
                                 getSensorLocation(sensorLocationId);
                             int usageCount = sensor.getId3().toInt();
@@ -173,11 +244,40 @@ public class ScannerApplication extends Application implements BootstrapNotifier
                                     sensorLocationId,
                                     locatingTime,
                                     usageCount);
-                            NotificationHelper.sendNotification(this, "Nutihelkur", beaconLocation);
+                        whichNotification(beaconLocation);
                 } else {
                     Log.d(TAG, "SENSOR ALREADY IN DATABASE!");
                 }
             }
+        }
+    }
+
+    /**
+     * Decides wihich notification must be send - with sound on without.
+     * @param beaconLocation to send notification with location
+     */
+    public void whichNotification(String beaconLocation) {
+        boolean displayOff = true;
+
+        DisplayManager displayM = (DisplayManager) this.getSystemService(Context.DISPLAY_SERVICE);
+        for (Display display : displayM.getDisplays()) {
+            if (display.getState() == Display.STATE_OFF) {
+                displayOff = false;
+
+            }
+        }
+        Log.d(TAG, "DISPLAY " + displayOff );
+
+
+        AudioManager audioM = (AudioManager)getSystemService(Context.AUDIO_SERVICE);
+        boolean headPhonesOn = audioM.isWiredHeadsetOn();
+        Log.d(TAG, "HEADPHONES " + headPhonesOn);
+
+
+        if (displayOff || headPhonesOn) {
+            NotificationHelper.sendSoundNotification(this, "Nutihelkur", beaconLocation);
+        } else {
+            NotificationHelper.sendNotification(this, "Nutihelkur", beaconLocation);
         }
     }
 
